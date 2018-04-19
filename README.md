@@ -1,4 +1,4 @@
-# Bash-tint
+# bash-tint
 [![Build Status](https://travis-ci.org/ArtBIT/bash-tint.svg)](https://travis-ci.org/ArtBIT/bash-tint) [![GitHub license](https://img.shields.io/github/license/ArtBIT/bash-tint.svg)](https://github.com/ArtBIT/bash-tint) [![GitHub stars](https://img.shields.io/github/stars/ArtBIT/bash-tint.svg)](https://github.com/ArtBIT/bash-tint)  [![awesomeness](https://img.shields.io/badge/awesomeness-maximum-red.svg)](https://github.com/ArtBIT/bash-tint)
 
 Bash-tint aims to make your script's output nice and colorful, as easy as possible.
@@ -42,16 +42,19 @@ clam install ArtBIT/bash-tint && clam source ArtBIT/bash-tint/src/tint
 ## Examples
 
 <img src="/assets/example1.png">
+
 ```bash
 tint "white(Cyan(T)Magenta(I)Yellow(N)Black(T)) is bold(really) easy to use."
 ```
 
 <img src="/assets/example2.png">
+
 ```bash
 tintf "Running test: bold(%s) %s" "Test XYZ" "green([OK])"
 ```
 
 <img src="/assets/example3.png">
+
 ```bash
 tintf "bold(%s) %s" "red([Error:])" "Could not load config file."
 ```
