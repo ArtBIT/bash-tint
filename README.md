@@ -41,17 +41,17 @@ clam install ArtBIT/bash-tint && clam source ArtBIT/bash-tint/src/tint
 
 ## Examples
 
-<img src="/assets/example1.png" height="50">
+<img src="/assets/example1.png">
 ```bash
 tint "white(Cyan(T)Magenta(I)Yellow(N)Black(T)) is bold(really) easy to use."
 ```
 
-<img src="/assets/example2.png" height="50">
+<img src="/assets/example2.png">
 ```bash
 tintf "Running test: bold(%s) %s" "Test XYZ" "green([OK])"
 ```
 
-<img src="/assets/examplee.png" height="50">
+<img src="/assets/example3.png">
 ```bash
 tintf "bold(%s) %s" "red([Error:])" "Could not load config file."
 ```
