@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -e
+TESTS=$( cd "$( dirname "$(readlink -f "${BASH_SOURCE[0]}")" )" && pwd )
+source "$TESTS/../src/tint"
+
+for test_suite_filepath in $TESTS/test_*; do
+    echo "Test suite $(basename $test_suite_filepath):"
+    source "$test_suite_filepath"
+    # Extract a list of functions that are prefixed with "test_"
+    test_functions=($(cat "$test_suite_filepath" | grep -o "\btest_[^(]\+(" | sed 's/.$//'))
+    # Find the length of the function with the longest name
+    max_length=$(printf "%s\n" "${test_functions[@]}" | sort -u | awk '{print length}' | sort -nr | head -1)
+    for test_function in ${test_functions[@]}; do
+        tintf "  %-$((max_length+2))s" "$test_function"
+        if eval "$test_function"; then
+            tintf "[ green(OK) ]"
+        else
+            tintf "[ red(FAIL) ]"
+        fi
+        tint ""
+    done
+done

@@ -1,0 +1,174 @@
+# The ANSI/VT100 terminals and terminal emulators can display colors
+# and formatted text using escape sequences. Escape sequences use the
+# following format:
+# <Esc>[<FormatCode>m
+# In Bash, the <Esc> character can be obtained with the following syntaxes: \e, \033, or \x1B
+
+tint() {
+    local text code mode prefix infix suffix instruction parameters parts tint_regex OIFS
+    local always_append_newline=1
+    if [ "$1" == "-n" ]; then
+        always_append_newline=
+        shift
+    fi
+    if [ "$1" == "-h" -o "$1" == "--help" ]; then
+        tint_usage
+        shift
+    fi
+
+    text="$1"
+    if [ ! -z "$1" ]; then
+        tint_regex='(^.*)\b(black|red|green|yellow|blue|magenta|cyan|gray|light_gray|normal|light_red|light_green|light_yellow|light_blue|light_magenta|light_cyan|white|Black|Red|Green|Yellow|Blue|Magenta|Cyan|Gray|Light_gray|Normal|Light_red|Light_green|Light_yellow|Light_blue|Light_magenta|Light_cyan|White|bold|dim|underline|blink|invert|hidden)\(((?:[^)\\]|\\\)|\\[^)])*)\)(.*$)'
+        while true; do
+            # find the innermost tint instruction "instruction(parameters)"
+            parts=$(echo "$text" | tr '\n' '\f' | perl -pe "s/${tint_regex}/\1\n\2\n\3\n\4/")
+            if [ "$(echo "$parts" | wc -l)" -eq 4 ]; then
+                OIFS="$IFS"
+                IFS=
+                while read -r prefix; do
+                    read -r instruction;
+                    read -r parameters;
+                    read -r suffix;
+                    break;
+                done < <(echo "$parts")
+                IFS="$OIFS"
+
+                case "$instruction" in
+                    bold)             code="1"  ; mode="fx";;
+                    dim)              code="2"  ; mode="fx";;
+                    underline)        code="4"  ; mode="fx";;
+                    blink)            code="5"  ; mode="fx";;
+                    invert)           code="7"  ; mode="fx";;
+                    hidden)           code="8"  ; mode="fx";;
+
+                    black)            code="30" ; mode="fg";;
+                    red)              code="31" ; mode="fg";;
+                    green)            code="32" ; mode="fg";;
+                    yellow)           code="33" ; mode="fg";;
+                    blue)             code="34" ; mode="fg";;
+                    magenta)          code="35" ; mode="fg";;
+                    cyan)             code="36" ; mode="fg";;
+                    light_gray)       code="37" ; mode="fg";;
+                    normal)           code="39" ; mode="fg";;
+                    gray)             code="90" ; mode="fg";;
+                    light_red)        code="91" ; mode="fg";;
+                    light_green)      code="92" ; mode="fg";;
+                    light_yellow)     code="93" ; mode="fg";;
+                    light_blue)       code="94" ; mode="fg";;
+                    light_magenta)    code="95" ; mode="fg";;
+                    light_cyan)       code="96" ; mode="fg";;
+                    white)            code="97" ; mode="fg";;
+
+                    Black)            code="40" ; mode="bg";;
+                    Red)              code="41" ; mode="bg";;
+                    Green)            code="42" ; mode="bg";;
+                    Yellow)           code="43" ; mode="bg";;
+                    Blue)             code="44" ; mode="bg";;
+                    Magenta)          code="45" ; mode="bg";;
+                    Cyan)             code="46" ; mode="bg";;
+                    Light_gray)       code="47" ; mode="bg";;
+                    Normal)           code="49" ; mode="bg";;
+                    Gray)             code="100"; mode="bg";;
+                    Light_red)        code="101"; mode="bg";;
+                    Light_green)      code="102"; mode="bg";;
+                    Light_yellow)     code="103"; mode="bg";;
+                    Light_blue)       code="104"; mode="bg";;
+                    Light_magenta)    code="105"; mode="bg";;
+                    Light_cyan)       code="106"; mode="bg";;
+                    White)            code="107"; mode="bg";;
+                    *)                code=;      mode=;
+                esac
+
+                # effects can be disabled via escape sequences
+                if [ "$mode" = "fx" ]; then
+                    infix="\e[${code}m${parameters}\e[2${code}m"
+                else
+                # for colors, we have to leave a special tag, 
+                # which will be replaced by the outer instruction
+                # or the default color, ultimately.
+                    color="\e[${code}m"
+                    sed_color=$(echo "$color" | sed -e 's/[]\/$*.^[]/\\&/g')
+                    parameters=$(echo "$parameters" | sed "s/<<<${mode}end>>>/${sed_color}/g")
+                    infix="${color}${parameters}<<<${mode}end>>>"
+                fi
+                text=$(echo "${prefix}${infix}${suffix}")
+            else
+                break
+            fi
+        done
+        text=$(echo "$text" | sed -e 's/<<<bgend>>>/\\e[49m/g' -e 's/<<<fgend>>>/\\e[39m/g' -e 's/\\)/)/g' | tr '\f' '\n')
+    fi
+
+    if [ -z "$always_append_newline" ]; then
+        echo -ne "$text"
+    else
+        echo -e "$text"
+    fi
+}
+
+tintf() {
+    tint -n "$(printf "$@")"
+}
+
+tint_logo() {
+    #colors=(Red Green Yellow Magenta Blue Cyan)
+    colors=(Light_red Light_blue Light_yellow Light_cyan Light_magenta)
+    while IFS= read -r line; do
+        while true; do
+            echo "$line" | grep -q '#'
+            if [ $? -gt 0 ]; then
+                break;
+            fi
+            color="${colors[$RANDOM % ${#colors[@]}]}"
+            line=$(echo "$line" | sed "s/##/$color(  )/")
+        done
+        tint "$line"
+    done < <(cat <<-'EOF'
+	##########  ######  ####    ##  ##########
+	    ##        ##    ##  ##  ##      ##    
+	    ##        ##    ##    ####      ##    
+	    ##      ######  ##      ##      ##    
+	EOF
+    )
+}
+
+tint_usage() {
+    usage=$(cat <<"HELP_USAGE"
+Usage: tint <string>
+String format:                  String can  contain one or more tint functions.
+
+Functions:                      Result:
+    bold#\b(text)                   bold(text)
+    underline#\b(text)              underline(text)
+    invert#\b(text)                 invert(text)
+    blink#\b(text)                  blink(text)
+    hidden#\b(text)                 hidden(text)
+    red#\b(text)                    red(text)
+    green#\b(text)                  green(text)
+    yellow#\b(text)                 yellow(text)
+    blue#\b(text)                   blue(text)
+    magenta#\b(text)                magenta(text)
+    cyan#\b(text)                   cyan(text)
+    light_gray#\b(text)             light_gray(text)
+    normal#\b(text)                 normal(text)
+    gray#\b(text)                   gray(text)
+    light_red#\b(text)              light_red(text)
+    light_green#\b(text)            light_green(text)
+    light_yellow#\b(text)           light_yellow(text)
+    light_blue#\b(text)             light_blue(text)
+    light_magenta#\b(text)          light_magenta(text)
+    light_cyan#\b(text)             light_cyan(text)
+    white#\b(text)                  white(text)
+
+    *Use capitalized functions to control the background bold(Red#\b(...)) instead of bold(red#\b(...))
+
+Example:
+    tint "white#\b#\b(Cyan#\b(T)Magenta#\b(I)Yellow#\b(N)Black#\b(T)) is fun!"
+Outputs:
+    bold(Cyan(T)Magenta(I)Yellow(N)Black(T)) is fun!
+    
+HELP_USAGE
+)
+    tint_logo
+    tint "$usage"
+}
