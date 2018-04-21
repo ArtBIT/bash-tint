@@ -3,22 +3,16 @@
 SCRIPT_DIR=$( cd "$( dirname "$(readlink -f "${BASH_SOURCE[0]}")" )" && pwd )
 source $SCRIPT_DIR/../src/tint
 
-ESC='\e'
+ESC=''
+RESET="${ESC}(B${ESC}[m"
 
 BOLD="1"
-BOLD_OFF="21"
 DIM="2"
-DIM_OFF="22"
 UNDERLINE="4"
-UNDERLINE_OFF="24"
 BLINK="5"
-BLINK_OFF="25"
 INVERT="7"
-INVERT_OFF="27"
 HIDDEN="8"
-HIDDEN_OFF="28"
 
-NORMAL="39"
 BLACK="30"
 RED="31"
 GREEN="32"
@@ -27,14 +21,6 @@ BLUE="34"
 MAGENTA="35"
 CYAN="36"
 LIGHT_GRAY="37"
-GRAY="90"
-LIGHT_BLACK="90"
-LIGHT_RED="91"
-LIGHT_GREEN="92"
-LIGHT_YELLOW="93"
-LIGHT_BLUE="94"
-LIGHT_MAGENTA="95"
-LIGHT_CYAN="96"
 WHITE="97"
 
 BLACK_BG="40"
@@ -45,16 +31,8 @@ BLUE_BG="44"
 MAGENTA_BG="45"
 CYAN_BG="46"
 LIGHT_GRAY_BG="47"
-NORMAL_BG="49"
+RESET_BG="49"
 GRAY_BG="100"
-LIGHT_NORMAL_BG="109"
-LIGHT_BLACK_BG="100"
-LIGHT_RED_BG="101"
-LIGHT_GREEN_BG="102"
-LIGHT_YELLOW_BG="109"
-LIGHT_BLUE_BG="104"
-LIGHT_MAGENTA_BG="105"
-LIGHT_CYAN_BG="106"
 WHITE_BG="107"
 
 control_sequence() {
@@ -75,8 +53,10 @@ function test_foreground_colors() {
     local COLOR color
     for color in "${colors[@]}"; do
         COLOR=$(echo "$color"|tr '/a-z/' '/A-Z/')
-        if [ "$(tint "${color}($TEST_MESSAGE)")" != "$(control_sequence "${!COLOR}" "${TEST_MESSAGE}" "${NORMAL}")" ]; then
-            echo "Failed testing for ${color}"
+        ACTUAL="$(tintf "${color}($TEST_MESSAGE)" | cat -e)"
+        EXPECTED="$(control_sequence "${!COLOR}" "${TEST_MESSAGE}" "${RESET}" | cat -e)" 
+        if [ "$ACTUAL" != "$EXPECTED" ]; then
+            printf "Failed asserting that '%s' is '%s'\n" "$ACTUAL" "$EXPECTED"
             return 1
         fi
     done
@@ -89,8 +69,10 @@ function test_background_colors() {
     local COLOR color
     for color in "${colors[@]}"; do
         COLOR="$(echo "$color"| tr '/a-z/' '/A-Z/')_BG"
-        if [ "$(tint "${color}($TEST_MESSAGE)")" != "$(control_sequence "${!COLOR}" "${TEST_MESSAGE}" "${NORMAL_BG}")" ]; then
-            echo "test for ${color}"
+        ACTUAL="$(tintf "${color}($TEST_MESSAGE)" | cat -e)"
+        EXPECTED="$(control_sequence "${!COLOR}" "${TEST_MESSAGE}" "${RESET}" | cat -e)" 
+        if [ "$ACTUAL" != "$EXPECTED" ]; then
+            printf "Failed asserting that '%s' is '%s'\n" "$ACTUAL" "$EXPECTED"
             return 1
         fi
     done
@@ -103,9 +85,10 @@ function test_text_effects() {
     local EFFECT effect
     for effect in "${effects[@]}"; do
         EFFECT="$(echo "$effect"| tr '/a-z/' '/A-Z/')"
-        EFFECT_OFF="${EFFECT}_OFF"
-        if [ "$(tint "${effect}($TEST_MESSAGE)")" != "$(control_sequence "${!EFFECT}" "${TEST_MESSAGE}" "${!EFFECT_OFF}")" ]; then
-            echo "test for ${effect}"
+        ACTUAL="$(tintf "${effect}($TEST_MESSAGE)" | cat -e)"
+        EXPECTED="$(control_sequence "${!EFFECT}" "${TEST_MESSAGE}" "${RESET}" | cat -e)" 
+        if [ "$ACTUAL" != "$EXPECTED" ]; then
+            printf "Failed asserting that '%s' is '%s'\n" "$ACTUAL" "$EXPECTED"
             return 1
         fi
     done
@@ -113,13 +96,13 @@ function test_text_effects() {
 }
 
 function test_mixed_colors() {
-    [ "$(tint "This is some red(red text with some blue(blue) text) and some bold(text).")" == "$(control_sequence "This is some " $RED "red text with some " $BLUE "blue" $RED " text" $NORMAL " and some " $BOLD "text" $BOLD_OFF "." )" ] &&
-    [ "$(tint "bold(This is some bold Green(red(red text on green background with some blue(blue) text))) and some underline(red(underlined red text on Blue(blue background))).")" == "$(control_sequence $BOLD "This is some bold " $GREEN_BG $RED "red text on green background with some " $BLUE "blue" $RED " text" $NORMAL $NORMAL_BG $BOLD_OFF " and some " $UNDERLINE $RED "underlined red text on " $BLUE_BG "blue background" $NORMAL_BG $NORMAL $UNDERLINE_OFF ".")" ] &&
+    [ "$(tintf "This is some red(red text with some blue(blue) text) and some bold(text).")" == "$(control_sequence "This is some " $RED "red text with some " $BLUE "blue" $RESET $RED " text" $RESET " and some " $BOLD "text" $RESET "." )" ] &&
+    [ "$(tintf "bold(This is some bold Green(red(red text on green background with some blue(blue) text))) and some underline(red(underlined red text on Blue(blue background))).")" == "$(control_sequence $BOLD "This is some bold " $GREEN_BG $RED "red text on green background with some " $BLUE "blue" $RESET $RED $GREEN_BG $BOLD " text" $RESET $GREEN_BG $BOLD $RESET $BOLD $RESET " and some " $UNDERLINE $RED "underlined red text on " $BLUE_BG "blue background" $RESET $RED $UNDERLINE $RESET $UNDERLINE $RESET ".")" ] &&
     return 0 || return 1
 }
 
 function test_escaped_brackets() {
-    [ "$(tint "red(:-\))")" == "$(control_sequence $RED ":-)" $NORMAL)" ] &&
-    [ "$(tint 'red(\\)')" == "$(control_sequence $RED '\' $NORMAL)" ] &&
+    [ "$(tintf "red(:-\))")" == "$(control_sequence $RED ":-)" $RESET)" ] &&
+    [ "$(tintf 'red(\\ )')" == "$(control_sequence $RED '\ ' $RESET)" ] &&
     return 0 || return 1
 }

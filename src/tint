@@ -1,126 +1,220 @@
 # The ANSI/VT100 terminals and terminal emulators can display colors
-# and formatted text using escape sequences. Escape sequences use the
-# following format:
-# <Esc>[<FormatCode>m
-# In Bash, the <Esc> character can be obtained with the following syntaxes: \e, \033, or \x1B
+# and formatted text using escape sequences. Instead of using the raw
+# ANSI escape sequences, we use the tput command which is ensures
+# portability between various terminals and terminal emulators.
 
-tint() {
-    local text code mode prefix infix suffix instruction parameters parts tint_regex OIFS
-    local always_append_newline=1
-    if [ "$1" == "-n" ]; then
-        always_append_newline=
-        shift
-    fi
-    if [ "$1" == "-h" -o "$1" == "--help" ]; then
-        tint_usage
-        shift
-    fi
+_tint_match_command() {
+    local cmd=""
+    local context=""
+    case "$1" in
+        bold)
+            cmd="bold"
+            context="bold"
+            ;;
+        dim)
+            cmd="dim"
+            context="dim"
+            ;;
+        underline)
+            cmd="smul"
+            context="underline"
+            ;;
+        standout)
+            cmd="smso"
+            context="standout"
+            ;;
+        blink)
+            cmd="blink"
+            context="blink"
+            ;;
+        invert)
+            cmd="rev"
+            context="invert"
+            ;;
+        hidden)
+            cmd="invis"
+            context="hidden"
+            ;;
+        reset)
+            cmd="sgr0"
+            context=""
+            ;;
+        black)
+            cmd="setaf 0"
+            context="fg"
+            ;;
+        red)
+            cmd="setaf 1"
+            context="fg"
+            ;;
+        green)
 
-    text="$1"
-    if [ ! -z "$1" ]; then
-        tint_regex='(^.*)\b(black|red|green|yellow|blue|magenta|cyan|gray|light_gray|normal|light_red|light_green|light_yellow|light_blue|light_magenta|light_cyan|white|Black|Red|Green|Yellow|Blue|Magenta|Cyan|Gray|Light_gray|Normal|Light_red|Light_green|Light_yellow|Light_blue|Light_magenta|Light_cyan|White|bold|dim|underline|blink|invert|hidden)\(((?:[^)\\]|\\\)|\\[^)])*)\)(.*$)'
-        while true; do
-            # find the innermost tint instruction "instruction(parameters)"
-            parts=$(echo "$text" | tr '\n' '\f' | perl -pe "s/${tint_regex}/\1\n\2\n\3\n\4/")
-            if [ "$(echo "$parts" | wc -l)" -eq 4 ]; then
-                OIFS="$IFS"
-                IFS=
-                while read -r prefix; do
-                    read -r instruction;
-                    read -r parameters;
-                    read -r suffix;
-                    break;
-                done < <(echo "$parts")
-                IFS="$OIFS"
-
-                case "$instruction" in
-                    bold)             code="1"  ; mode="fx";;
-                    dim)              code="2"  ; mode="fx";;
-                    underline)        code="4"  ; mode="fx";;
-                    blink)            code="5"  ; mode="fx";;
-                    invert)           code="7"  ; mode="fx";;
-                    hidden)           code="8"  ; mode="fx";;
-
-                    black)            code="30" ; mode="fg";;
-                    red)              code="31" ; mode="fg";;
-                    green)            code="32" ; mode="fg";;
-                    yellow)           code="33" ; mode="fg";;
-                    blue)             code="34" ; mode="fg";;
-                    magenta)          code="35" ; mode="fg";;
-                    cyan)             code="36" ; mode="fg";;
-                    light_gray)       code="37" ; mode="fg";;
-                    normal)           code="39" ; mode="fg";;
-                    gray)             code="90" ; mode="fg";;
-                    light_red)        code="91" ; mode="fg";;
-                    light_green)      code="92" ; mode="fg";;
-                    light_yellow)     code="93" ; mode="fg";;
-                    light_blue)       code="94" ; mode="fg";;
-                    light_magenta)    code="95" ; mode="fg";;
-                    light_cyan)       code="96" ; mode="fg";;
-                    white)            code="97" ; mode="fg";;
-
-                    Black)            code="40" ; mode="bg";;
-                    Red)              code="41" ; mode="bg";;
-                    Green)            code="42" ; mode="bg";;
-                    Yellow)           code="43" ; mode="bg";;
-                    Blue)             code="44" ; mode="bg";;
-                    Magenta)          code="45" ; mode="bg";;
-                    Cyan)             code="46" ; mode="bg";;
-                    Light_gray)       code="47" ; mode="bg";;
-                    Normal)           code="49" ; mode="bg";;
-                    Gray)             code="100"; mode="bg";;
-                    Light_red)        code="101"; mode="bg";;
-                    Light_green)      code="102"; mode="bg";;
-                    Light_yellow)     code="103"; mode="bg";;
-                    Light_blue)       code="104"; mode="bg";;
-                    Light_magenta)    code="105"; mode="bg";;
-                    Light_cyan)       code="106"; mode="bg";;
-                    White)            code="107"; mode="bg";;
-                    *)                code=;      mode=;
-                esac
-
-                # effects can be disabled via escape sequences
-                if [ "$mode" = "fx" ]; then
-                    infix="\e[${code}m${parameters}\e[2${code}m"
-                else
-                # for colors, we have to leave a special tag, 
-                # which will be replaced by the outer instruction
-                # or the default color, ultimately.
-                    color="\e[${code}m"
-                    sed_color=$(echo "$color" | sed -e 's/[]\/$*.^[]/\\&/g')
-                    parameters=$(echo "$parameters" | sed "s/<<<${mode}end>>>/${sed_color}/g")
-                    infix="${color}${parameters}<<<${mode}end>>>"
-                fi
-                text=$(echo "${prefix}${infix}${suffix}")
-            else
-                break
+            cmd="setaf 2"
+            context="fg"
+            ;;
+        yellow)
+            cmd="setaf 3"
+            context="fg"
+            ;;
+        blue)
+            cmd="setaf 4"
+            context="fg"
+            ;;
+        magenta)
+            cmd="setaf 5"
+            context="fg"
+            ;;
+        cyan)
+            cmd="setaf 6"
+            context="fg"
+            ;;
+        white)
+            cmd="setaf 7"
+            context="fg"
+            ;;
+        Black)
+            cmd="setab 0"
+            context="bg"
+            ;;
+        Red)
+            cmd="setab 1"
+            context="bg"
+            ;;
+        Green)
+            cmd="setab 2"
+            context="bg"
+            ;;
+        Yellow)
+            cmd="setab 3"
+            context="bg"
+            ;;
+        Blue)
+            cmd="setab 4"
+            context="bg"
+            ;;
+        Magenta)
+            cmd="setab 5"
+            context="bg"
+            ;;
+        Cyan)
+            cmd="setab 6"
+            context="bg"
+            ;;
+        White)
+            cmd="setab 7"
+            context="bg"
+            ;;
+        color*) 
+            code=${1/color/}
+            if [[ "$code" =~ ^[0-9]+$ ]]; then
+                cmd="setaf $code"
+                context="fg"
             fi
-        done
-        text=$(echo "$text" | sed -e 's/<<<bgend>>>/\\e[49m/g' -e 's/<<<fgend>>>/\\e[39m/g' -e 's/\\)/)/g' | tr '\f' '\n')
-    fi
+            ;;
+        Color*) 
+            code=${1/Color/}
+            if [[ "$code" =~ ^[0-9]+$ ]]; then
+                cmd="setab $code"
+                context="bg"
+            fi
+            ;;
+    esac
 
-    if [ -z "$always_append_newline" ]; then
-        echo -ne "$text"
-    else
-        echo -e "$text"
-    fi
+    printf "${cmd}:${context}"
 }
 
-tintf() {
-    tint -n "$(printf "$@")"
+_tint_parse() {
+    local text="${1}"
+    # passing assoc arrays as function arguments in bash is ... not pretty
+    eval "declare -A context="${2#*=}
+
+    local i char word cmd subject result content content_length content_suffix content_prefix
+    word_char_regex="[a-zA-Z0-9]"
+    word=""
+    result=""
+    for (( i=0; i<"${#text}"; i++ )); do
+        char="${text:$i:1}"
+        
+        if [[ "$char" =~ $word_char_regex ]]; then
+            word="${word}${char}"
+        else 
+            if [[ ! -z "$word" ]]; then
+                if [[ "$char" == '(' ]]; then
+                    IFS=':' read -r cmd context_name <<< "$(_tint_match_command "$word")"
+                    if [[ ! -z "$cmd" ]] && [[ ! -z "$context_name" ]]; then
+
+                        # if the current char is not a closing bracket that means that this is not 
+                        # one of the tint functions, so we bail early
+                        if [ "${text:$i:1}" != '(' ]; then
+                            continue
+                        fi
+                        # otherwise we try to find the matching closing bracket
+                        local counter=0
+                        local ch prev_ch
+                        local closing_bracket_position=
+                        for (( j=$i; j<${#text}; j++ )); do
+                            ch="${text:$j:1}"
+                            if [[ "$ch" == '(' ]]; then
+                                ((counter++))
+                            elif [[ "$ch" == ')' ]] && [[ "$prev_ch" != '\' ]]; then
+                                ((counter--))
+                            fi
+                            if [[ $counter -eq 0 ]]; then
+                                closing_bracket_position=$j
+                                break
+                            fi
+                            prev_ch="$ch"
+                        done
+
+                        if [[ ! -z "$closing_bracket_position" ]]; then
+                            content_prefix="$(tput $cmd)"
+                            # reset all settings
+                            tputargs="sgr0" 
+                            # and then set all the active contexts
+                            for ctx in fg bg bold dim underline standout blink invert hidden; do
+                                if [ ! -z "${context[$ctx]}" ]; then
+                                    tputargs="${tputargs}\n${context[$ctx]}"
+                                fi
+                            done
+                            content_suffix="$(printf "$tputargs" | tput -S)"
+                            context_string=$(declare -p context)
+                            eval "declare -A child_context="${context_string#*=}
+                            child_context["$context_name"]="$cmd"
+                            content_length=$(( closing_bracket_position-i-1 ))
+                            content="${text:$((i+1)):$content_length}"
+                            content="$(_tint_parse "$content" "$(declare -p child_context)")"
+                            result="${result}${content_prefix}${content}${content_suffix}"
+                            i=$closing_bracket_position
+                        fi
+                    fi
+                    word=
+                    char=
+                fi
+                result="${result}${word}${char}"
+                word=""
+            else
+                result="${result}${char}"
+                word=""
+            fi
+        fi
+    done
+    result="${result//\\(/(}"
+    result="${result//\\)/)}"
+    printf "${result}${word}"
 }
+
 
 tint_logo() {
-    #colors=(Red Green Yellow Magenta Blue Cyan)
-    colors=(Light_red Light_blue Light_yellow Light_cyan Light_magenta)
+    colors=(Red Green Yellow Magenta Blue Cyan)
+    #colors=(Light_red Light_blue Light_yellow Light_cyan Light_magenta)
+    regex="#"
     while IFS= read -r line; do
         while true; do
-            echo "$line" | grep -q '#'
-            if [ $? -gt 0 ]; then
+            if ! [[ "$line" =~ $regex ]]; then
                 break;
             fi
             color="${colors[$RANDOM % ${#colors[@]}]}"
-            line=$(echo "$line" | sed "s/##/$color(  )/")
+            line=${line/\#\#/$color(  )}
         done
         tint "$line"
     done < <(cat <<-'EOF'
@@ -134,41 +228,82 @@ tint_logo() {
 
 tint_usage() {
     usage=$(cat <<"HELP_USAGE"
+
 Usage: tint <string>
+
 String format:                  String can  contain one or more tint functions.
 
 Functions:                      Result:
-    bold#\b(text)                   bold(text)
-    underline#\b(text)              underline(text)
-    invert#\b(text)                 invert(text)
-    blink#\b(text)                  blink(text)
-    hidden#\b(text)                 hidden(text)
-    red#\b(text)                    red(text)
-    green#\b(text)                  green(text)
-    yellow#\b(text)                 yellow(text)
-    blue#\b(text)                   blue(text)
-    magenta#\b(text)                magenta(text)
-    cyan#\b(text)                   cyan(text)
-    light_gray#\b(text)             light_gray(text)
-    normal#\b(text)                 normal(text)
-    gray#\b(text)                   gray(text)
-    light_red#\b(text)              light_red(text)
-    light_green#\b(text)            light_green(text)
-    light_yellow#\b(text)           light_yellow(text)
-    light_blue#\b(text)             light_blue(text)
-    light_magenta#\b(text)          light_magenta(text)
-    light_cyan#\b(text)             light_cyan(text)
-    white#\b(text)                  white(text)
 
-    *Use capitalized functions to control the background bold(Red#\b(...)) instead of bold(red#\b(...))
+  Effects:
+
+    bold\(text)                   bold(text)
+    underline\(text)              underline(text)
+    invert\(text)                 invert(text)
+    blink\(text)                  blink(text)
+    hidden\(text)                 hidden(text)
+
+  Foreground colors:
+
+    black\(text)                  black(text)
+    red\(text)                    red(text)
+    green\(text)                  green(text)
+    yellow\(text)                 yellow(text)
+    blue\(text)                   blue(text)
+    magenta\(text)                magenta(text)
+    cyan\(text)                   cyan(text)
+    white\(text)                  white(text)
+
+  Background colors:
+
+    Black\(text)                  Black(text)
+    Red\(text)                    Red(text)
+    Green\(text)                  Green(text)
+    Yellow\(text)                 Yellow(text)
+    Blue\(text)                   Blue(text)
+    Magenta\(text)                Magenta(text)
+    Cyan\(text)                   Cyan(text)
+    White\(text)                  White(text)
 
 Example:
-    tint "white#\b#\b(Cyan#\b(T)Magenta#\b(I)Yellow#\b(N)Black#\b(T)) is fun!"
+    tint "white\(Cyan\(T)Magenta\(I)Yellow\(N)Black\(T)) is fun!"
 Outputs:
     bold(Cyan(T)Magenta(I)Yellow(N)Black(T)) is fun!
     
 HELP_USAGE
 )
-    tint_logo
     tint "$usage"
+}
+
+tint() {
+    if [ "$1" == "-n" ]; then
+        shift
+        tintf "$@"
+    else
+        tintf "$@"
+        printf "\n"
+    fi
+}
+
+tintf() {
+    if [ "$1" == "-h" -o "$1" == "--help" ]; then
+        tint_usage
+        return
+    fi
+
+    if [ "$1" == "-l" -o "$1" == "--logo" ]; then
+        tint_logo
+        return
+    fi
+
+    # trailing newlines are removed with command substitution, to circumvent this, we add a trailing dot to the input string
+    # and then remove the last character from the result string
+    input="$1."
+    shift
+
+    # This is the initial context
+    declare -A context
+    context=( ["fg"]= ["bg"]= ["bold"]= ["dim"]= ["underline"]= ["standout"]= ["blink"]= ["invert"]= ["hidden"]= )
+    result="$(_tint_parse "$(printf "$input" "${@}")" "$(declare -p context)")"
+    printf "${result::-1}"
 }

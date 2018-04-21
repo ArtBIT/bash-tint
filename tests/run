@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 TESTS=$( cd "$( dirname "$(readlink -f "${BASH_SOURCE[0]}")" )" && pwd )
@@ -12,12 +12,11 @@ for test_suite_filepath in $TESTS/test_*; do
     # Find the length of the function with the longest name
     max_length=$(printf "%s\n" "${test_functions[@]}" | sort -u | awk '{print length}' | sort -nr | head -1)
     for test_function in ${test_functions[@]}; do
-        tintf "  %-$((max_length+2))s" "$test_function"
         if eval "$test_function"; then
-            tintf "[ green(OK) ]"
+            test_status="green(OK)"
         else
-            tintf "[ red(FAIL) ]"
+            test_status="red(FAIL)"
         fi
-        tint ""
+        tintf "  %-$((max_length+2))s [ %s ]\n" "$test_function" "$test_status"
     done
 done
