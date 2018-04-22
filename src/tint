@@ -3,189 +3,147 @@
 # ANSI escape sequences, we use the tput command which is ensures
 # portability between various terminals and terminal emulators.
 
-_tint_match_command() {
-    local cmd=""
-    local context=""
-    case "$1" in
-        bold)
-            cmd="bold"
-            context="bold"
-            ;;
-        dim)
-            cmd="dim"
-            context="dim"
-            ;;
-        underline)
-            cmd="smul"
-            context="underline"
-            ;;
-        standout)
-            cmd="smso"
-            context="standout"
-            ;;
-        blink)
-            cmd="blink"
-            context="blink"
-            ;;
-        invert)
-            cmd="rev"
-            context="invert"
-            ;;
-        hidden)
-            cmd="invis"
-            context="hidden"
-            ;;
-        reset)
-            cmd="sgr0"
-            context=""
-            ;;
-        black)
-            cmd="setaf 0"
-            context="fg"
-            ;;
-        red)
-            cmd="setaf 1"
-            context="fg"
-            ;;
-        green)
-
-            cmd="setaf 2"
-            context="fg"
-            ;;
-        yellow)
-            cmd="setaf 3"
-            context="fg"
-            ;;
-        blue)
-            cmd="setaf 4"
-            context="fg"
-            ;;
-        magenta)
-            cmd="setaf 5"
-            context="fg"
-            ;;
-        cyan)
-            cmd="setaf 6"
-            context="fg"
-            ;;
-        white)
-            cmd="setaf 7"
-            context="fg"
-            ;;
-        Black)
-            cmd="setab 0"
-            context="bg"
-            ;;
-        Red)
-            cmd="setab 1"
-            context="bg"
-            ;;
-        Green)
-            cmd="setab 2"
-            context="bg"
-            ;;
-        Yellow)
-            cmd="setab 3"
-            context="bg"
-            ;;
-        Blue)
-            cmd="setab 4"
-            context="bg"
-            ;;
-        Magenta)
-            cmd="setab 5"
-            context="bg"
-            ;;
-        Cyan)
-            cmd="setab 6"
-            context="bg"
-            ;;
-        White)
-            cmd="setab 7"
-            context="bg"
-            ;;
-        color*) 
-            code=${1/color/}
-            if [[ "$code" =~ ^[0-9]+$ ]]; then
-                cmd="setaf $code"
-                context="fg"
-            fi
-            ;;
-        Color*) 
-            code=${1/Color/}
-            if [[ "$code" =~ ^[0-9]+$ ]]; then
-                cmd="setab $code"
-                context="bg"
-            fi
-            ;;
-    esac
-
-    printf "${cmd}:${context}"
+# Returns the position of the matching closing bracket in the string
+# Note: $2 specifies the position of a open bracket to find the match for
+_tint_get_closing_bracket_position() {
+    local text="$1"
+    local position=${2:-0}
+    local counter=0
+    local ch prev_ch
+    local closing_bracket_position=
+    for (( j=$position; j<${#text}; j++ )); do
+        ch="${text:$j:1}"
+        if [[ "$ch" == '(' ]]; then
+            ((counter++))
+        elif [[ "$ch" == ')' ]] && [[ "$prev_ch" != '\' ]]; then
+            ((counter--))
+        fi
+        if [[ $counter -eq 0 ]]; then
+            closing_bracket_position=$j
+            return $j
+        fi
+        prev_ch="$ch"
+    done
+    return 0
 }
 
+_debug() {
+    [[ -z "$DEBUG" ]] && return
+    echo >&2 "$@"
+}
+
+# Echoes the resulting transform
+# Returns the number of characters to advance in the parsing
 _tint_parse() {
-    local text="${1}"
-    # passing assoc arrays as function arguments in bash is ... not pretty
+    local text="$1"
     eval "declare -A context="${2#*=}
 
-    local i char word cmd subject result content content_length content_suffix content_prefix
-    word_char_regex="[a-zA-Z0-9]"
+    local i char word cmd subject result content length
+    word_char_regex="[a-zA-Z0-9_]"
     word=""
     result=""
     for (( i=0; i<"${#text}"; i++ )); do
         char="${text:$i:1}"
-        
         if [[ "$char" =~ $word_char_regex ]]; then
             word="${word}${char}"
         else 
             if [[ ! -z "$word" ]]; then
                 if [[ "$char" == '(' ]]; then
-                    IFS=':' read -r cmd context_name <<< "$(_tint_match_command "$word")"
-                    if [[ ! -z "$cmd" ]] && [[ ! -z "$context_name" ]]; then
+                    _tint_get_closing_bracket_position "${text:$i}"
+                    local closing_bracket_position=$?
+                    if [[ $closing_bracket_position -gt 0 ]]; then
+                        # copy context
+                        context_string=$(declare -p context)
+                        eval "declare -A child_context="${context_string#*=}
 
-                        # if the current char is not a closing bracket that means that this is not 
-                        # one of the tint functions, so we bail early
-                        if [ "${text:$i:1}" != '(' ]; then
-                            continue
-                        fi
-                        # otherwise we try to find the matching closing bracket
-                        local counter=0
-                        local ch prev_ch
-                        local closing_bracket_position=
-                        for (( j=$i; j<${#text}; j++ )); do
-                            ch="${text:$j:1}"
-                            if [[ "$ch" == '(' ]]; then
-                                ((counter++))
-                            elif [[ "$ch" == ')' ]] && [[ "$prev_ch" != '\' ]]; then
-                                ((counter--))
-                            fi
-                            if [[ $counter -eq 0 ]]; then
-                                closing_bracket_position=$j
-                                break
-                            fi
-                            prev_ch="$ch"
-                        done
+                        content="${text:$(( i + 1)):$(( closing_bracket_position - 1 ))}"
 
-                        if [[ ! -z "$closing_bracket_position" ]]; then
-                            content_prefix="$(tput $cmd)"
-                            # reset all settings
-                            tputargs="sgr0" 
-                            # and then set all the active contexts
-                            for ctx in fg bg bold dim underline standout blink invert hidden; do
-                                if [ ! -z "${context[$ctx]}" ]; then
-                                    tputargs="${tputargs}\n${context[$ctx]}"
+                        ctx=
+                        cmd=
+                        # re-match brackets for commands that return functions, i.e. color(123)(text)
+                        rematch=
+                        case "$word" in
+                            # Text effects
+                            bold)               cmd="bold"    ctx="$word" ;;
+                            dim)                cmd="dim"     ctx="$word" ;;
+                            underline)          cmd="smul"    ctx="$word" ;;
+                            standout)           cmd="smso"    ctx="$word" ;;
+                            blink)              cmd="blink"   ctx="$word" ;;
+                            invert)             cmd="rev"     ctx="$word" ;;
+                            hidden)             cmd="invis"   ctx="$word" ;;
+
+                            # Foreground colors
+                            black)              cmd="setaf 0" ctx="fg" ;;
+                            red)                cmd="setaf 1" ctx="fg" ;;
+                            green)              cmd="setaf 2" ctx="fg" ;;
+                            yellow)             cmd="setaf 3" ctx="fg" ;;
+                            blue)               cmd="setaf 4" ctx="fg" ;;
+                            magenta)            cmd="setaf 5" ctx="fg" ;;
+                            cyan)               cmd="setaf 6" ctx="fg" ;;
+                            white)              cmd="setaf 7" ctx="fg" ;;
+
+                            # Background colors
+                            Black)              cmd="setab 0" ctx="bg" ;;
+                            Red)                cmd="setab 1" ctx="bg" ;;
+                            Green)              cmd="setab 2" ctx="bg" ;;
+                            Yellow)             cmd="setab 3" ctx="bg" ;;
+                            Blue)               cmd="setab 4" ctx="bg" ;;
+                            Magenta)            cmd="setab 5" ctx="bg" ;;
+                            Cyan)               cmd="setab 6" ctx="bg" ;;
+                            White)              cmd="setab 7" ctx="bg" ;;
+
+                            # Commands
+                            reset)              cmd="sgr0"    ;;
+                            clear)              cmd="clear"   ;;
+                            save_cursor)        cmd="sc"      ;;
+                            restore_cursor)     cmd="rc"      ;;
+                            move_cursor)
+                                IFS=$' ' read -r X Y <<< "$content"
+                                cmd="cup $Y $X"
+                                ;;
+                            color)  
+                                if [[ "$content" =~ ^[0-9]+$ ]]; then
+                                    cmd="setaf $content"
+                                    ctx="fg"
+                                    rematch=1
                                 fi
-                            done
-                            content_suffix="$(printf "$tputargs" | tput -S)"
-                            context_string=$(declare -p context)
-                            eval "declare -A child_context="${context_string#*=}
-                            child_context["$context_name"]="$cmd"
-                            content_length=$(( closing_bracket_position-i-1 ))
-                            content="${text:$((i+1)):$content_length}"
-                            content="$(_tint_parse "$content" "$(declare -p child_context)")"
-                            result="${result}${content_prefix}${content}${content_suffix}"
-                            i=$closing_bracket_position
+                                ;;
+                            Color*) 
+                                if [[ "$content" =~ ^[0-9]+$ ]]; then
+                                    cmd="setab $content"
+                                    ctx="bg"
+                                    rematch=1
+                                fi
+                                ;;
+                        esac
+
+                        if [ ! -z "$cmd" ]; then
+                            (( i+=closing_bracket_position ))
+                            if [[ ! -z "$ctx" ]]; then
+                                if [[ ! -z "$rematch" ]]; then
+                                    content="${text:$(( i + 1))}"
+                                    _tint_get_closing_bracket_position "$content"
+                                    closing_bracket_position=$?
+                                    content="${content:1:$(( closing_bracket_position - 1 ))}"
+                                    (( i+=closing_bracket_position + 1))
+                                fi
+                                # reset all contexts then set all the active contexts
+                                local tputargs="sgr0" 
+                                for context_name in fg bg bold dim underline standout blink invert hidden; do
+                                    if [ ! -z "${context[$context_name]}" ]; then
+                                        tputargs="${tputargs}\n${context[$context_name]}"
+                                    fi
+                                done
+                                child_context["$ctx"]="$cmd"
+                                content="$(_tint_parse "$content" "$(declare -p child_context)")"
+                                result="${result}$(tput $cmd)${content}$(printf "$tputargs" | tput -S)"
+                            else 
+                                # No need to reset context
+                                result="${result}${cmd}${content}"
+                            fi
                         fi
+                    else
+                        result="${result}${word}${char}"
                     fi
                     word=
                     char=
@@ -198,15 +156,17 @@ _tint_parse() {
             fi
         fi
     done
-    result="${result//\\(/(}"
-    result="${result//\\)/)}"
-    printf "${result}${word}"
+    result="${result}${word}"
+    printf "$result"
 }
 
+_tint_exec_command() {
+    local cmd=
+    local content="$2"
+}
 
-tint_logo() {
+_tint_logo() {
     colors=(Red Green Yellow Magenta Blue Cyan)
-    #colors=(Light_red Light_blue Light_yellow Light_cyan Light_magenta)
     regex="#"
     while IFS= read -r line; do
         while true; do
@@ -272,6 +232,7 @@ Outputs:
     
 HELP_USAGE
 )
+    _tint_logo
     tint "$usage"
 }
 
@@ -291,11 +252,6 @@ tintf() {
         return
     fi
 
-    if [ "$1" == "-l" -o "$1" == "--logo" ]; then
-        tint_logo
-        return
-    fi
-
     # trailing newlines are removed with command substitution, to circumvent this, we add a trailing dot to the input string
     # and then remove the last character from the result string
     input="$1."
@@ -305,5 +261,7 @@ tintf() {
     declare -A context
     context=( ["fg"]= ["bg"]= ["bold"]= ["dim"]= ["underline"]= ["standout"]= ["blink"]= ["invert"]= ["hidden"]= )
     result="$(_tint_parse "$(printf "$input" "${@}")" "$(declare -p context)")"
+    result="${result//\\(/(}"
+    result="${result//\\)/)}"
     printf "${result::-1}"
 }
