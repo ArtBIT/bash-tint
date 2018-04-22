@@ -73,16 +73,33 @@ _tint_parse() {
                             hidden)             cmd="invis"   ctx="$word" ;;
 
                             # Foreground colors
-                            black)              cmd="setaf 0" ctx="fg" ;;
-                            red)                cmd="setaf 1" ctx="fg" ;;
-                            green)              cmd="setaf 2" ctx="fg" ;;
-                            yellow)             cmd="setaf 3" ctx="fg" ;;
-                            blue)               cmd="setaf 4" ctx="fg" ;;
-                            magenta)            cmd="setaf 5" ctx="fg" ;;
-                            cyan)               cmd="setaf 6" ctx="fg" ;;
-                            white)              cmd="setaf 7" ctx="fg" ;;
+                            light_red)          cmd="setaf 9"  ctx="fg" ;;
+                            light_green)        cmd="setaf 10" ctx="fg" ;;
+                            light_yellow)       cmd="setaf 11" ctx="fg" ;;
+                            light_blue)         cmd="setaf 12" ctx="fg" ;;
+                            light_magenta)      cmd="setaf 13" ctx="fg" ;;
+                            light_cyan)         cmd="setaf 14" ctx="fg" ;;
+                            light_gray | light_grey) 
+                                                cmd="setaf 15" ctx="fg" ;;
+                            black)              cmd="setaf 0"  ctx="fg" ;;
+                            red)                cmd="setaf 1"  ctx="fg" ;;
+                            green)              cmd="setaf 2"  ctx="fg" ;;
+                            yellow)             cmd="setaf 3"  ctx="fg" ;;
+                            blue)               cmd="setaf 4"  ctx="fg" ;;
+                            magenta)            cmd="setaf 5"  ctx="fg" ;;
+                            cyan)               cmd="setaf 6"  ctx="fg" ;;
+                            white)              cmd="setaf 7"  ctx="fg" ;;
+                            gray | grey)        cmd="setaf 8"  ctx="fg" ;;
 
                             # Background colors
+                            Light_red)          cmd="setab 9" ctx="bg" ;;
+                            Light_green)        cmd="setab 10" ctx="bg" ;;
+                            Light_yellow)       cmd="setab 11" ctx="bg" ;;
+                            Light_blue)         cmd="setab 12" ctx="bg" ;;
+                            Light_magenta)      cmd="setab 13" ctx="bg" ;;
+                            Light_cyan)         cmd="setab 14" ctx="bg" ;;
+                            Light_gray | Light_grey) 
+                                                cmd="setab 15" ctx="bg" ;;
                             Black)              cmd="setab 0" ctx="bg" ;;
                             Red)                cmd="setab 1" ctx="bg" ;;
                             Green)              cmd="setab 2" ctx="bg" ;;
@@ -91,6 +108,7 @@ _tint_parse() {
                             Magenta)            cmd="setab 5" ctx="bg" ;;
                             Cyan)               cmd="setab 6" ctx="bg" ;;
                             White)              cmd="setab 7" ctx="bg" ;;
+                            Gray | Grey)        cmd="setab 8" ctx="bg" ;;
 
                             # Commands
                             reset)              cmd="sgr0"    ;;
