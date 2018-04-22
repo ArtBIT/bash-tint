@@ -116,7 +116,7 @@ _tint_parse() {
                             save_cursor)        cmd="sc"      ;;
                             restore_cursor)     cmd="rc"      ;;
                             move_cursor)
-                                IFS=$' ' read -r X Y <<< "$content"
+                                IFS=$',' read -r X Y <<< "$content"
                                 cmd="cup $Y $X"
                                 ;;
                             color)  
@@ -126,7 +126,7 @@ _tint_parse() {
                                     rematch=1
                                 fi
                                 ;;
-                            Color*) 
+                            Color) 
                                 if [[ "$content" =~ ^[0-9]+$ ]]; then
                                     cmd="setab $content"
                                     ctx="bg"
