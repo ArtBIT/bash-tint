@@ -58,6 +58,7 @@ tintf "Running test: bold(%s) %s" "Test XYZ" "green([OK])"
 ```bash
 tintf "bold(%s) %s" "red([Error:])" "Could not load config file."
 ```
+<img src="/assets/example4.png">
 
 ```bash
 for (( i=0; i<=$(tput colors); i++ )); do tintf "Color($i)( )"; done;
