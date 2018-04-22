@@ -5,7 +5,7 @@
 
 # Returns the position of the matching closing bracket in the string
 # Note: $2 specifies the position of a open bracket to find the match for
-_tint_get_closing_bracket_position() {
+_bash_tint__get_closing_bracket_position() {
     local text="$1"
     local position=${2:-0}
     local counter=0
@@ -33,8 +33,7 @@ _debug() {
 }
 
 # Echoes the resulting transform
-# Returns the number of characters to advance in the parsing
-_tint_parse() {
+_bash_tint__parse() {
     local text="$1"
     eval "declare -A context="${2#*=}
 
@@ -49,7 +48,7 @@ _tint_parse() {
         else 
             if [[ ! -z "$word" ]]; then
                 if [[ "$char" == '(' ]]; then
-                    _tint_get_closing_bracket_position "${text:$i}"
+                    _bash_tint__get_closing_bracket_position "${text:$i}"
                     local closing_bracket_position=$?
                     if [[ $closing_bracket_position -gt 0 ]]; then
                         # copy context
@@ -140,7 +139,7 @@ _tint_parse() {
                             if [[ ! -z "$ctx" ]]; then
                                 if [[ ! -z "$rematch" ]]; then
                                     content="${text:$(( i + 1))}"
-                                    _tint_get_closing_bracket_position "$content"
+                                    _bash_tint__get_closing_bracket_position "$content"
                                     closing_bracket_position=$?
                                     content="${content:1:$(( closing_bracket_position - 1 ))}"
                                     (( i+=closing_bracket_position + 1))
@@ -153,11 +152,11 @@ _tint_parse() {
                                     fi
                                 done
                                 child_context["$ctx"]="$cmd"
-                                content="$(_tint_parse "$content" "$(declare -p child_context)")"
+                                content="$(_bash_tint__parse "$content" "$(declare -p child_context)")"
                                 result="${result}$(tput $cmd)${content}$(printf "$tputargs" | tput -S)"
                             else 
                                 # No need to reset context
-                                result="${result}${cmd}${content}"
+                                result="${result}$(tput $cmd)"
                             fi
                         fi
                     else
@@ -178,12 +177,12 @@ _tint_parse() {
     printf "$result"
 }
 
-_tint_exec_command() {
+_bash_tint__exec_command() {
     local cmd=
     local content="$2"
 }
 
-_tint_logo() {
+_bash_tint__logo() {
     colors=(Red Green Yellow Magenta Blue Cyan)
     regex="#"
     while IFS= read -r line; do
@@ -266,7 +265,7 @@ Outputs:
     
 HELP_USAGE
 )
-    _tint_logo
+    _bash_tint__logo
     tint "$usage"
 }
 
@@ -294,8 +293,10 @@ tintf() {
     # This is the initial context
     declare -A context
     context=( ["fg"]= ["bg"]= ["bold"]= ["dim"]= ["underline"]= ["standout"]= ["blink"]= ["invert"]= ["hidden"]= )
-    result="$(_tint_parse "$(printf "$input" "${@}")" "$(declare -p context)")"
+    result="$(_bash_tint__parse "$(printf "$input" "${@}")" "$(declare -p context)")"
     result="${result//\\(/(}"
     result="${result//\\)/)}"
     printf "${result::-1}"
 }
+
+export -f tint tintf

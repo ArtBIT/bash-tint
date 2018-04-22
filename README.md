@@ -59,6 +59,10 @@ tintf "Running test: bold(%s) %s" "Test XYZ" "green([OK])"
 tintf "bold(%s) %s" "red([Error:])" "Could not load config file."
 ```
 
+```bash
+for (( i=0; i<=$(tput colors); i++ )); do tintf "Color($i)( )"; done;
+```
+
 # Credits
 Inspired by https://misc.flogisoft.com/bash/tip_colors_and_formatting
 
