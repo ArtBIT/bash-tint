@@ -47,62 +47,108 @@ control_sequence() {
     done
 }
 
-function test_foreground_colors() {
-    local TEST_MESSAGE="This is a test message."
-    local colors=(red green blue magenta cyan yellow black)
-    local COLOR color
-    for color in "${colors[@]}"; do
-        COLOR=$(echo "$color"|tr '/a-z/' '/A-Z/')
-        ACTUAL="$(tintf "${color}($TEST_MESSAGE)" | cat -e)"
-        EXPECTED="$(control_sequence "${!COLOR}" "${TEST_MESSAGE}" "${RESET}" | cat -e)" 
+_assert_that_pairs_are_equal() {
+    while [ "$#" -gt 0 ]; do
+        ACTUAL="$(printf "$1" | cat -e)"
+        EXPECTED="$(printf "$2" | cat -e)"
+        shift 2
         if [ "$ACTUAL" != "$EXPECTED" ]; then
-            printf "Failed asserting that '%s' is '%s'\n" "$ACTUAL" "$EXPECTED"
+            printf "Assertion failed!\n"
+            printf "Expected: '%s'\n" "$EXPECTED"
+            printf "Received: '%s'\n" "$ACTUAL"
             return 1
         fi
     done
     return 0
+}
+
+function test_foreground_colors() {
+    local TEST_MESSAGE="This is a test message."
+    local colors=(red green blue magenta cyan yellow black)
+    local COLOR color
+    declare assertion_pairs
+    for color in "${colors[@]}"; do
+        COLOR=$(echo "$color"|tr '/a-z/' '/A-Z/')
+        assertion_pairs+=( "$(tintf "${color}($TEST_MESSAGE)" | cat -e)" )
+        assertion_pairs+=( "$(control_sequence "${!COLOR}" "${TEST_MESSAGE}" "${RESET}" | cat -e)" )
+    done
+    _assert_that_pairs_are_equal "${assertion_pairs[@]}"
 }
 
 function test_background_colors() {
     local TEST_MESSAGE="This is a test message."
     local colors=(Red Green Blue Magenta Cyan Yellow Black)
     local COLOR color
+    declare assertion_pairs
     for color in "${colors[@]}"; do
         COLOR="$(echo "$color"| tr '/a-z/' '/A-Z/')_BG"
-        ACTUAL="$(tintf "${color}($TEST_MESSAGE)" | cat -e)"
-        EXPECTED="$(control_sequence "${!COLOR}" "${TEST_MESSAGE}" "${RESET}" | cat -e)" 
-        if [ "$ACTUAL" != "$EXPECTED" ]; then
-            printf "Failed asserting that '%s' is '%s'\n" "$ACTUAL" "$EXPECTED"
-            return 1
-        fi
+        assertion_pairs+=( "$(tintf "${color}($TEST_MESSAGE)" | cat -e)" )
+        assertion_pairs+=( "$(control_sequence "${!COLOR}" "${TEST_MESSAGE}" "${RESET}" | cat -e)" )
     done
-    return 0
+    _assert_that_pairs_are_equal "${assertion_pairs[@]}"
 }
 
 function test_text_effects() {
     local TEST_MESSAGE="This is a test message."
     local effects=(bold underline dim blink)
     local EFFECT effect
+    declare assertion_pairs
     for effect in "${effects[@]}"; do
         EFFECT="$(echo "$effect"| tr '/a-z/' '/A-Z/')"
-        ACTUAL="$(tintf "${effect}($TEST_MESSAGE)" | cat -e)"
-        EXPECTED="$(control_sequence "${!EFFECT}" "${TEST_MESSAGE}" "${RESET}" | cat -e)" 
-        if [ "$ACTUAL" != "$EXPECTED" ]; then
-            printf "Failed asserting that '%s' is '%s'\n" "$ACTUAL" "$EXPECTED"
-            return 1
-        fi
+        assertion_pairs+=( "$(tintf "${effect}($TEST_MESSAGE)" | cat -e)" )
+        assertion_pairs+=( "$(control_sequence "${!EFFECT}" "${TEST_MESSAGE}" "${RESET}" | cat -e)" )
     done
-    return 0
+    _assert_that_pairs_are_equal "${assertion_pairs[@]}"
 }
 
 function test_mixed_colors() {
-    [ "$(tintf "This is some red(red text with some blue(blue) text) and some bold(text).")" == "$(control_sequence "This is some " $RED "red text with some " $BLUE "blue" $RESET $RED " text" $RESET " and some " $BOLD "text" $RESET "." )" ] &&
-    [ "$(tintf "bold(This is some bold Green(red(red text on green background with some blue(blue) text))) and some underline(red(underlined red text on Blue(blue background))).")" == "$(control_sequence $BOLD "This is some bold " $GREEN_BG $RED "red text on green background with some " $BLUE "blue" $RESET $RED $GREEN_BG $BOLD " text" $RESET $GREEN_BG $BOLD $RESET $BOLD $RESET " and some " $UNDERLINE $RED "underlined red text on " $BLUE_BG "blue background" $RESET $RED $UNDERLINE $RESET $UNDERLINE $RESET ".")" ] &&
-    return 0 || return 1
+    declare assertion_pairs
+    assertion_pairs+=( "$(tintf "This is some red(red text with some blue(blue) text) and some bold(text).")" )
+    assertion_pairs+=( "$(control_sequence "This is some " $RED "red text with some " $BLUE "blue" $RESET $RED " text" $RESET " and some " $BOLD "text" $RESET "." )" )
+
+    assertion_pairs+=( "$(tintf "bold(This is some bold Green(red(red text on green background with some blue(blue) text))) and some underline(red(underlined red text on Blue(blue background))).")" )
+    assertion_pairs+=( "$(control_sequence $BOLD "This is some bold " $GREEN_BG $RED "red text on green background with some " $BLUE "blue" $RESET $RED $GREEN_BG $BOLD " text" $RESET $GREEN_BG $BOLD $RESET $BOLD $RESET " and some " $UNDERLINE $RED "underlined red text on " $BLUE_BG "blue background" $RESET $RED $UNDERLINE $RESET $UNDERLINE $RESET ".")" )
+
+    _assert_that_pairs_are_equal "${assertion_pairs[@]}"
 }
 
 function test_escaped_brackets() {
-    [ "$(tintf "red(:-\))")" == "$(control_sequence $RED ":-)" $RESET)" ] &&
-    [ "$(tintf 'red(\\ )')" == "$(control_sequence $RED '\ ' $RESET)" ] &&
-    return 0 || return 1
+    declare assertion_pairs
+    assertion_pairs+=( "$(tintf "red(:-\))")" )
+    assertion_pairs+=( "$(control_sequence $RED ":-)" $RESET)" )
+
+    assertion_pairs+=( "$(tintf 'red(\\ )')" )
+    assertion_pairs+=( "$(control_sequence $RED '\ ' $RESET)" )
+
+    _assert_that_pairs_are_equal "${assertion_pairs[@]}"
+}
+
+function test_custom_colors() {
+    local TEST_MESSAGE="This is a test message."
+    declare assertion_pairs
+    assertion_pairs+=( "$(tintf "color(0)($TEST_MESSAGE)")" )
+    assertion_pairs+=( "$(control_sequence $BLACK "$TEST_MESSAGE" $RESET)" )
+
+    assertion_pairs+=( "$(tintf "color(1)($TEST_MESSAGE)")" )
+    assertion_pairs+=( "$(control_sequence $RED "$TEST_MESSAGE" $RESET)" )
+
+    assertion_pairs+=( "$(tintf "color(2)($TEST_MESSAGE)")" )
+    assertion_pairs+=( "$(control_sequence $GREEN "$TEST_MESSAGE" $RESET)" )
+
+    assertion_pairs+=( "$(tintf "color(3)($TEST_MESSAGE)")" )
+    assertion_pairs+=( "$(control_sequence $YELLOW "$TEST_MESSAGE" $RESET)" )
+
+    assertion_pairs+=( "$(tintf "Color(0)($TEST_MESSAGE)")" )
+    assertion_pairs+=( "$(control_sequence $BLACK_BG "$TEST_MESSAGE" $RESET)" )
+
+    assertion_pairs+=( "$(tintf "Color(1)($TEST_MESSAGE)")" )
+    assertion_pairs+=( "$(control_sequence $RED_BG "$TEST_MESSAGE" $RESET)" )
+
+    assertion_pairs+=( "$(tintf "Color(2)($TEST_MESSAGE)")" )
+    assertion_pairs+=( "$(control_sequence $GREEN_BG "$TEST_MESSAGE" $RESET)" )
+
+    assertion_pairs+=( "$(tintf "Color(3)($TEST_MESSAGE)")" )
+    assertion_pairs+=( "$(control_sequence $YELLOW_BG "$TEST_MESSAGE" $RESET)" )
+
+    _assert_that_pairs_are_equal "${assertion_pairs[@]}"
 }
