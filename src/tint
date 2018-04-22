@@ -231,6 +231,14 @@ Functions:                      Result:
     magenta\(text)                magenta(text)
     cyan\(text)                   cyan(text)
     white\(text)                  white(text)
+    gray\(text)                   gray(text)
+    light_red\(text)              light_red(text)
+    light_green\(text)            light_green(text)
+    light_yellow\(text)           light_yellow(text)
+    light_blue\(text)             light_blue(text)
+    light_magenta\(text)          light_magenta(text)
+    light_cyan\(text)             light_cyan(text)
+    light_gray\(text)             light_gray(text)
 
   Background colors:
 
@@ -242,6 +250,14 @@ Functions:                      Result:
     Magenta\(text)                Magenta(text)
     Cyan\(text)                   Cyan(text)
     White\(text)                  White(text)
+    Gray\(text)                   Gray(text)
+    Light_red\(text)              Light_red(text)
+    Light_green\(text)            Light_green(text)
+    Light_yellow\(text)           Light_yellow(text)
+    Light_blue\(text)             Light_blue(text)
+    Light_magenta\(text)          Light_magenta(text)
+    Light_cyan\(text)             Light_cyan(text)
+    Light_gray\(text)             Light_gray(text)
 
 Example:
     tint "white\(Cyan\(T)Magenta\(I)Yellow\(N)Black\(T)) is fun!"
