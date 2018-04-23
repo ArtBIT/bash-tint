@@ -64,7 +64,7 @@ for (( i=0; i<=$(tput colors); i++ )); do tintf "Color($i)( )"; done;
 <img src="/assets/example4.png">
 
 # Credits
-Inspired by https://misc.flogisoft.com/bash/tip_colors_and_formatting
+http://wiki.bash-hackers.org/scripting/terminalcodes (Thanks to [sdk-](https://www.reddit.com/user/sdk-) for pointing me in the right direction)
 
 # License
 
