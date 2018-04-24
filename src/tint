@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+#
 # The ANSI/VT100 terminals and terminal emulators can display colors
 # and formatted text using escape sequences. Instead of using the raw
 # ANSI escape sequences, we use the tput command which is ensures
@@ -11,7 +13,7 @@ _bash_tint__get_closing_bracket_position() {
     local counter=0
     local ch prev_ch
     local closing_bracket_position=
-    for (( j=$position; j<${#text}; j++ )); do
+    for (( j=position; j<${#text}; j++ )); do
         ch="${text:$j:1}"
         if [[ "$ch" == '(' ]]; then
             ((counter++))
@@ -38,7 +40,7 @@ _bash_tint__parse() {
     local context
     eval "declare -A context="${2#*=}
 
-    local i char word cmd subject result content length
+    local i char word cmd result content
     word_char_regex="[a-zA-Z0-9_]"
     word=""
     result=""
