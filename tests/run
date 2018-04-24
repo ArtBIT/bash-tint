@@ -13,14 +13,15 @@ for test_suite_filepath in $TESTS/test_*; do
     (( max_length+=2 ))
     for test_function in ${test_functions[@]}; do
         $test_function
-        if [ $? -eq 0 ]; then
+        exit_status=$?
+        if [ $exit_status -eq 0 ]; then
             test_status="green(OK)"
         else
             test_status="red(FAIL)"
         fi
         tintf "  %-${max_length}s [ %s ]\n" "$test_function" "$test_status"
-        if [ $? -gt 0 ]; then
-            exit $?
+        if [ $exit_status -gt 0 ]; then
+            exit $exit_status
         fi
     done
 done
