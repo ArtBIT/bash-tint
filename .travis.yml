@@ -1,14 +1,6 @@
 os: linux
 language: bash
 
-env:
-  - BASHES="bash2.05b bash3.0.16 bash3.2.48 bash4.2.45"
-
-before_install:
-  - echo | sudo add-apt-repository ppa:agriffis/bashes
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq $BASHES
-
 before_script:
   - chmod +x ./tests/run
 
