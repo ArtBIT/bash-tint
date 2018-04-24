@@ -47,7 +47,7 @@ control_sequence() {
     done
 }
 
-_assert_that_pairs_are_equal() {
+_assert_that_assertion_pairs_are_equal() {
     while [ "$#" -gt 0 ]; do
         ACTUAL="$(printf "$1" | cat -e)"
         EXPECTED="$(printf "$2" | cat -e)"
@@ -72,7 +72,7 @@ function test_foreground_colors() {
         assertion_pairs+=( "$(tintf "${color}($TEST_MESSAGE)" | cat -e)" )
         assertion_pairs+=( "$(control_sequence "${!COLOR}" "${TEST_MESSAGE}" "${RESET}" | cat -e)" )
     done
-    _assert_that_pairs_are_equal "${assertion_pairs[@]}"
+    _assert_that_assertion_pairs_are_equal "${assertion_pairs[@]}"
 }
 
 function test_background_colors() {
@@ -85,7 +85,7 @@ function test_background_colors() {
         assertion_pairs+=( "$(tintf "${color}($TEST_MESSAGE)" | cat -e)" )
         assertion_pairs+=( "$(control_sequence "${!COLOR}" "${TEST_MESSAGE}" "${RESET}" | cat -e)" )
     done
-    _assert_that_pairs_are_equal "${assertion_pairs[@]}"
+    _assert_that_assertion_pairs_are_equal "${assertion_pairs[@]}"
 }
 
 function test_text_effects() {
@@ -98,7 +98,7 @@ function test_text_effects() {
         assertion_pairs+=( "$(tintf "${effect}($TEST_MESSAGE)" | cat -e)" )
         assertion_pairs+=( "$(control_sequence "${!EFFECT}" "${TEST_MESSAGE}" "${RESET}" | cat -e)" )
     done
-    _assert_that_pairs_are_equal "${assertion_pairs[@]}"
+    _assert_that_assertion_pairs_are_equal "${assertion_pairs[@]}"
 }
 
 function test_mixed_colors() {
@@ -109,7 +109,7 @@ function test_mixed_colors() {
     assertion_pairs+=( "$(tintf "bold(This is some bold Green(red(red text on green background with some blue(blue) text))) and some underline(red(underlined red text on Blue(blue background))).")" )
     assertion_pairs+=( "$(control_sequence $BOLD "This is some bold " $GREEN_BG $RED "red text on green background with some " $BLUE "blue" $RESET $RED $GREEN_BG $BOLD " text" $RESET $GREEN_BG $BOLD $RESET $BOLD $RESET " and some " $UNDERLINE $RED "underlined red text on " $BLUE_BG "blue background" $RESET $RED $UNDERLINE $RESET $UNDERLINE $RESET ".")" )
 
-    _assert_that_pairs_are_equal "${assertion_pairs[@]}"
+    _assert_that_assertion_pairs_are_equal "${assertion_pairs[@]}"
 }
 
 function test_escaped_brackets() {
@@ -120,7 +120,7 @@ function test_escaped_brackets() {
     assertion_pairs+=( "$(tintf 'red(\\ )')" )
     assertion_pairs+=( "$(control_sequence $RED '\ ' $RESET)" )
 
-    _assert_that_pairs_are_equal "${assertion_pairs[@]}"
+    _assert_that_assertion_pairs_are_equal "${assertion_pairs[@]}"
 }
 
 function test_custom_colors() {
@@ -150,5 +150,6 @@ function test_custom_colors() {
     assertion_pairs+=( "$(tintf "Color(3)($TEST_MESSAGE)")" )
     assertion_pairs+=( "$(control_sequence $YELLOW_BG "$TEST_MESSAGE" $RESET)" )
 
-    _assert_that_pairs_are_equal "${assertion_pairs[@]}"
+    _assert_that_assertion_pairs_are_equal "${assertion_pairs[@]}"
 }
+

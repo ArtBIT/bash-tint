@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-set -e
 TESTS=$( cd "$( dirname "$(readlink -f "${BASH_SOURCE[0]}")" )" && pwd )
 source "$TESTS/../src/tint"
 
@@ -11,12 +10,17 @@ for test_suite_filepath in $TESTS/test_*; do
     test_functions=($(cat "$test_suite_filepath" | grep -o "\btest_[^(]\+(" | sed 's/.$//'))
     # Find the length of the function with the longest name
     max_length=$(printf "%s\n" "${test_functions[@]}" | sort -u | awk '{print length}' | sort -nr | head -1)
+    (( max_length+=2 ))
     for test_function in ${test_functions[@]}; do
-        if eval "$test_function"; then
+        $test_function
+        if [ $? -eq 0 ]; then
             test_status="green(OK)"
         else
             test_status="red(FAIL)"
         fi
-        tintf "  %-$((max_length+2))s [ %s ]\n" "$test_function" "$test_status"
+        tintf "  %-${max_length}s [ %s ]\n" "$test_function" "$test_status"
+        if [ $? -gt 0 ]; then
+            exit $?
+        fi
     done
 done
