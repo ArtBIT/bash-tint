@@ -153,6 +153,13 @@ _bash_tint__parse() {
                                 done
                                 child_context["$ctx"]="$cmd"
                                 content="$(_bash_tint__parse "$content" "$(declare -p child_context)")"
+                                # if the sub content ends with a context reset, we truncate it, since the same thing is
+                                # going to happen in this step as well
+                                # sed 's,\x1B(B\x1B\[m\(\x1B\[[^m]\+m\)\+$,,g'
+                                re="(.*)\(B\[m(\[[^m]+m)*$";
+                                while [[ "$content" =~ $re ]]; do
+                                  content="${BASH_REMATCH[1]}"
+                                done
                                 result="${result}$(tput $cmd)${content}$(printf "$tputargs" | tput -S)"
                             else 
                                 # No need to reset context
@@ -296,6 +303,7 @@ tintf() {
     result="$(_bash_tint__parse "$(printf "$input" "${@}")" "$(declare -p context)")"
     result="${result//\\(/(}"
     result="${result//\\)/)}"
+
     printf "${result::-1}"
 }
 

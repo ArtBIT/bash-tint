@@ -107,7 +107,7 @@ function test_mixed_colors() {
     assertion_pairs+=( "$(control_sequence "This is some " $RED "red text with some " $BLUE "blue" $RESET $RED " text" $RESET " and some " $BOLD "text" $RESET "." )" )
 
     assertion_pairs+=( "$(tintf "bold(This is some bold Green(red(red text on green background with some blue(blue) text))) and some underline(red(underlined red text on Blue(blue background))).")" )
-    assertion_pairs+=( "$(control_sequence $BOLD "This is some bold " $GREEN_BG $RED "red text on green background with some " $BLUE "blue" $RESET $RED $GREEN_BG $BOLD " text" $RESET $GREEN_BG $BOLD $RESET $BOLD $RESET " and some " $UNDERLINE $RED "underlined red text on " $BLUE_BG "blue background" $RESET $RED $UNDERLINE $RESET $UNDERLINE $RESET ".")" )
+    assertion_pairs+=( "$(control_sequence $BOLD "This is some bold " $GREEN_BG $RED "red text on green background with some " $BLUE "blue" $RESET $RED $GREEN_BG $BOLD " text" $RESET " and some " $UNDERLINE $RED "underlined red text on " $BLUE_BG "blue background" $RESET ".")" )
 
     _assert_that_assertion_pairs_are_equal "${assertion_pairs[@]}"
 }
