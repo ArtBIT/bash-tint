@@ -35,6 +35,7 @@ _debug() {
 # Echoes the resulting transform
 _bash_tint__parse() {
     local text="$1"
+    local context
     eval "declare -A context="${2#*=}
 
     local i char word cmd subject result content length
