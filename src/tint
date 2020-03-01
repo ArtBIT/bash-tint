@@ -1,9 +1,33 @@
 #!/usr/bin/env bash
+#=========================================================================================
+# HEADER
+#=========================================================================================
+#  IMPLEMENTATION
 #
-# The ANSI/VT100 terminals and terminal emulators can display colors
-# and formatted text using escape sequences. Instead of using the raw
-# ANSI escape sequences, we use the tput command which is ensures
-# portability between various terminals and terminal emulators.
+#     title           tint
+#     description     The ANSI/VT100 terminals and terminal emulators can display colors
+#                     and formatted text using escape sequences. Instead of using the raw
+#                     ANSI escape sequences, we use the tput command which is ensures
+#                     portability between various terminals and terminal emulators.
+#     version         0.3
+#     author          Djordje Ungar <https://www.djordjeungar.com/>
+#     collaborator    Heitor Moreira da Silva <heitormoreira@yahoo.com.br>
+#     copyright       Copyright (c) 2018 ArtBIT
+#     license         MIT License
+#
+#=========================================================================================
+#  HISTORY
+#     2018-04-19 : ArtBIT       : Script creation
+#     2020-03-01 : heitormsilva : Add -c and -l options and improvements
+# 
+#=========================================================================================
+#  DEBUG OPTION
+#    set -n  # Uncomment to check your syntax, without execution.
+#    set -x  # Uncomment to debug this shell script
+#
+#=========================================================================================
+# END_OF_HEADER
+#=========================================================================================
 
 # Returns the position of the matching closing bracket in the string
 # Note: $2 specifies the position of a open bracket to find the match for
@@ -77,40 +101,44 @@ _bash_tint__parse() {
                             # Foreground colors
                             light_red)          cmd="setaf 9"  ctx="fg" ;;
                             light_green)        cmd="setaf 10" ctx="fg" ;;
-                            light_yellow)       cmd="setaf 11" ctx="fg" ;;
+                            light_yellow)       cmd="setaf 228" ctx="fg" ;;
                             light_blue)         cmd="setaf 12" ctx="fg" ;;
                             light_magenta)      cmd="setaf 13" ctx="fg" ;;
                             light_cyan)         cmd="setaf 14" ctx="fg" ;;
                             light_gray | light_grey) 
                                                 cmd="setaf 15" ctx="fg" ;;
+                            light_orange)       cmd="setaf 11" ctx="fg" ;;
                             black)              cmd="setaf 0"  ctx="fg" ;;
                             red)                cmd="setaf 1"  ctx="fg" ;;
                             green)              cmd="setaf 2"  ctx="fg" ;;
-                            yellow)             cmd="setaf 3"  ctx="fg" ;;
+                            yellow)             cmd="setaf 226"  ctx="fg" ;;
                             blue)               cmd="setaf 4"  ctx="fg" ;;
                             magenta)            cmd="setaf 5"  ctx="fg" ;;
                             cyan)               cmd="setaf 6"  ctx="fg" ;;
                             white)              cmd="setaf 7"  ctx="fg" ;;
                             gray | grey)        cmd="setaf 8"  ctx="fg" ;;
+                            orange)             cmd="setaf 3"  ctx="fg" ;;
 
                             # Background colors
                             Light_red)          cmd="setab 9" ctx="bg" ;;
                             Light_green)        cmd="setab 10" ctx="bg" ;;
-                            Light_yellow)       cmd="setab 11" ctx="bg" ;;
+                            Light_yellow)       cmd="setab 228" ctx="bg" ;;
                             Light_blue)         cmd="setab 12" ctx="bg" ;;
                             Light_magenta)      cmd="setab 13" ctx="bg" ;;
                             Light_cyan)         cmd="setab 14" ctx="bg" ;;
                             Light_gray | Light_grey) 
                                                 cmd="setab 15" ctx="bg" ;;
+                            Light_orange)       cmd="setab 11" ctx="bg" ;;
                             Black)              cmd="setab 0" ctx="bg" ;;
                             Red)                cmd="setab 1" ctx="bg" ;;
                             Green)              cmd="setab 2" ctx="bg" ;;
-                            Yellow)             cmd="setab 3" ctx="bg" ;;
+                            Yellow)             cmd="setab 226" ctx="bg" ;;
                             Blue)               cmd="setab 4" ctx="bg" ;;
                             Magenta)            cmd="setab 5" ctx="bg" ;;
                             Cyan)               cmd="setab 6" ctx="bg" ;;
                             White)              cmd="setab 7" ctx="bg" ;;
                             Gray | Grey)        cmd="setab 8" ctx="bg" ;;
+                            Orange)             cmd="setab 3" ctx="bg" ;;
 
                             # Commands
                             reset)              cmd="sgr0"    ;;
@@ -163,10 +191,16 @@ _bash_tint__parse() {
                                 while [[ "$content" =~ $re ]]; do
                                   content="${BASH_REMATCH[1]}"
                                 done
-                                result="${result}$(tput $cmd)${content}$(printf "$tputargs" | tput -S)"
+                                if [ "$clearText" = "false" ]; then
+                                    result="${result}$(tput $cmd)${content}$(printf "$tputargs" | tput -S)"
+                                else
+                                    result="${result}${content}"
+                                fi
                             else 
                                 # No need to reset context
-                                result="${result}$(tput $cmd)"
+                                if [ "$clearText" = "false" ]; then
+                                    result="${result}$(tput $cmd)"
+                                fi
                             fi
                         fi
                     else
@@ -193,7 +227,7 @@ _bash_tint__exec_command() {
 }
 
 _bash_tint__logo() {
-    colors=(Red Green Yellow Magenta Blue Cyan)
+    colors=(Red Green Yellow Magenta Blue Cyan Orange)
     regex="#"
     while IFS= read -r line; do
         while true; do
@@ -215,27 +249,28 @@ _bash_tint__logo() {
 
 tint_usage() {
     usage=$(cat <<"HELP_USAGE"
+Usage: tint [-c -n] <string>
+Options:
+  -c                            Remove all tint tag marks from the text and 
+                                returns it cleared.
+  -l                            List available colours codes to be used in 
+                                color\(123)(text) format.
+  -n                            Do not put a new line character at the end of text.
 
-Usage: tint <string>
-
-String format:                  String can  contain one or more tint functions.
-
+String format:                  String can contain one or more tint functions.
 Functions:                      Result:
-
   Effects:
-
     bold\(text)                   bold(text)
     underline\(text)              underline(text)
     invert\(text)                 invert(text)
     blink\(text)                  blink(text)
     hidden\(text)                 hidden(text)
-
   Foreground colors:
-
     black\(text)                  black(text)
     red\(text)                    red(text)
     green\(text)                  green(text)
     yellow\(text)                 yellow(text)
+    orange\(text)                 orange(text)
     blue\(text)                   blue(text)
     magenta\(text)                magenta(text)
     cyan\(text)                   cyan(text)
@@ -244,17 +279,17 @@ Functions:                      Result:
     light_red\(text)              light_red(text)
     light_green\(text)            light_green(text)
     light_yellow\(text)           light_yellow(text)
+    light_orange\(text)           light_orange(text)
     light_blue\(text)             light_blue(text)
     light_magenta\(text)          light_magenta(text)
     light_cyan\(text)             light_cyan(text)
     light_gray\(text)             light_gray(text)
-
   Background colors:
-
     Black\(text)                  Black(text)
     Red\(text)                    Red(text)
     Green\(text)                  Green(text)
     Yellow\(text)                 Yellow(text)
+    Orange\(text)                 Orange(text)
     Blue\(text)                   Blue(text)
     Magenta\(text)                Magenta(text)
     Cyan\(text)                   Cyan(text)
@@ -263,11 +298,11 @@ Functions:                      Result:
     Light_red\(text)              Light_red(text)
     Light_green\(text)            Light_green(text)
     Light_yellow\(text)           Light_yellow(text)
+    Light_orange\(text)           Light_orange(text)
     Light_blue\(text)             Light_blue(text)
     Light_magenta\(text)          Light_magenta(text)
     Light_cyan\(text)             Light_cyan(text)
     Light_gray\(text)             Light_gray(text)
-
 Example:
     tint "white\(Cyan\(T)Magenta\(I)Yellow\(N)Black\(T)) is fun!"
 Outputs:
@@ -279,13 +314,61 @@ HELP_USAGE
     tint "$usage"
 }
 
+listColours() {
+    tput init
+    local end=$(( $(tput colors)-1 ))
+    local w=8
+    for c in $(seq 0 $end); do
+        eval "$(printf "tput setaf %3s   " "$c")"; echo -n "$_"
+        [[ $c -ge $(( w*2 )) ]] && offset=2 || offset=0
+        [[ $(((c+offset) % (w-offset))) -eq $(((w-offset)-1)) ]] && echo
+    done
+    tput init
+}
+
 tint() {
-    if [ "$1" == "-n" ]; then
-        shift
-        tintf "$@"
-    else
+    if [ "$1" == "--help" ]; then
+        tint -h
+        return
+    fi
+ 
+    local clearText="false"
+    local newLine="true"
+
+    OPTIND=1 #reset getops index
+	while getopts ":chln" opt $@; do
+        case $opt in
+            c)
+                clearText=true
+                ;;
+            h)
+                tintf "$@"
+                return
+                ;;
+            l)
+                listColours
+                return
+                ;;
+            n)
+                newLine="false"
+                ;;
+            \?)
+                echo "Invalid option: '-${OPTARG}'" >&2
+                #exit 1
+                ;;
+            :)
+                echo "Option -$OPTARG requires an argument." >&2
+                #exit 1
+                ;;
+        esac
+        shift $((--OPTIND))
+    done
+
+    if [ "$newLine" = "true" ]; then
         tintf "$@"
         printf "\n"
+    else
+        tintf "$@"
     fi
 }
 
@@ -294,7 +377,6 @@ tintf() {
         tint_usage
         return
     fi
-
     # trailing newlines are removed with command substitution, to circumvent this, we add a trailing dot to the input string
     # and then remove the last character from the result string
     input="$1."
