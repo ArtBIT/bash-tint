@@ -191,14 +191,14 @@ _bash_tint__parse() {
                                 while [[ "$content" =~ $re ]]; do
                                   content="${BASH_REMATCH[1]}"
                                 done
-                                if [ "$clearText" = "false" ]; then
+                                if [ "$clearText" != "true" ]; then
                                     result="${result}$(tput $cmd)${content}$(printf "$tputargs" | tput -S)"
                                 else
                                     result="${result}${content}"
                                 fi
                             else 
                                 # No need to reset context
-                                if [ "$clearText" = "false" ]; then
+                                if [ "$clearText" != "true" ]; then
                                     result="${result}$(tput $cmd)"
                                 fi
                             fi
