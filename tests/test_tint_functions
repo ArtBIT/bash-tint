@@ -16,20 +16,22 @@ HIDDEN="$(tput invis)"
 BLACK="$(tput setaf 0)"
 RED="$(tput setaf 1)"
 GREEN="$(tput setaf 2)"
-YELLOW="$(tput setaf 3)"
+YELLOW="$(tput setaf 226)"
 BLUE="$(tput setaf 4)"
 MAGENTA="$(tput setaf 5)"
 CYAN="$(tput setaf 6)"
 WHITE="$(tput setaf 7)"
+ORANGE="$(tput setaf 3)"
 
 BLACK_BG="$(tput setab 0)"
 RED_BG="$(tput setab 1)"
 GREEN_BG="$(tput setab 2)"
-YELLOW_BG="$(tput setab 3)"
+YELLOW_BG="$(tput setab 226)"
 BLUE_BG="$(tput setab 4)"
 MAGENTA_BG="$(tput setab 5)"
 CYAN_BG="$(tput setab 6)"
 WHITE_BG="$(tput setab 7)"
+ORANGE_BG="$(tput setab 3)"
 
 control_sequence() {
     while test $# -gt 0
@@ -60,7 +62,7 @@ _assert_that_assertion_pairs_are_equal() {
 
 function test_foreground_colors() {
     local TEST_MESSAGE="This is a test message."
-    local colors=(red green blue magenta cyan yellow black)
+    local colors=(red green blue magenta cyan yellow black orange)
     local COLOR color
     declare assertion_pairs
     for color in "${colors[@]}"; do
@@ -73,7 +75,7 @@ function test_foreground_colors() {
 
 function test_background_colors() {
     local TEST_MESSAGE="This is a test message."
-    local colors=(Red Green Blue Magenta Cyan Yellow Black)
+    local colors=(Red Green Blue Magenta Cyan Yellow Black Orange)
     local COLOR color
     declare assertion_pairs
     for color in "${colors[@]}"; do
@@ -131,7 +133,7 @@ function test_custom_colors() {
     assertion_pairs+=( "$(tintf "color(2)($TEST_MESSAGE)")" )
     assertion_pairs+=( "$(control_sequence $GREEN "$TEST_MESSAGE" $RESET)" )
 
-    assertion_pairs+=( "$(tintf "color(3)($TEST_MESSAGE)")" )
+    assertion_pairs+=( "$(tintf "color(226)($TEST_MESSAGE)")" )
     assertion_pairs+=( "$(control_sequence $YELLOW "$TEST_MESSAGE" $RESET)" )
 
     assertion_pairs+=( "$(tintf "Color(0)($TEST_MESSAGE)")" )
@@ -143,7 +145,7 @@ function test_custom_colors() {
     assertion_pairs+=( "$(tintf "Color(2)($TEST_MESSAGE)")" )
     assertion_pairs+=( "$(control_sequence $GREEN_BG "$TEST_MESSAGE" $RESET)" )
 
-    assertion_pairs+=( "$(tintf "Color(3)($TEST_MESSAGE)")" )
+    assertion_pairs+=( "$(tintf "Color(226)($TEST_MESSAGE)")" )
     assertion_pairs+=( "$(control_sequence $YELLOW_BG "$TEST_MESSAGE" $RESET)" )
 
     _assert_that_assertion_pairs_are_equal "${assertion_pairs[@]}"
