@@ -192,7 +192,7 @@ _bash_tint__parse() {
                                   content="${BASH_REMATCH[1]}"
                                 done
                                 if [ "$clearText" != "true" ]; then
-                                    result="${result}$(tput $cmd)${content}$(printf "$tputargs" | tput -S)"
+                                    result="${result}$(tput $cmd)${content}$(printf -- "$tputargs" | tput -S)"
                                 else
                                     result="${result}${content}"
                                 fi
@@ -218,7 +218,7 @@ _bash_tint__parse() {
         fi
     done
     result="${result}${word}"
-    printf "$result"
+    printf -- "$result"
 }
 
 _bash_tint__exec_command() {
@@ -385,11 +385,11 @@ tintf() {
     # This is the initial context
     declare -A context
     context=( ["fg"]= ["bg"]= ["bold"]= ["dim"]= ["underline"]= ["standout"]= ["blink"]= ["invert"]= ["hidden"]= )
-    result="$(_bash_tint__parse "$(printf "$input" "${@}")" "$(declare -p context)")"
+    result="$(_bash_tint__parse "$(printf -- "$input" "${@}")" "$(declare -p context)")"
     result="${result//\\(/(}"
     result="${result//\\)/)}"
 
-    printf "${result::-1}"
+    printf -- "${result::-1}"
 }
 
-export -f tint tintf
+tint "${@}"

@@ -151,3 +151,21 @@ function test_custom_colors() {
     _assert_that_assertion_pairs_are_equal "${assertion_pairs[@]}"
 }
 
+function test_cleared_text() {
+	local testMessage[0]="This is"
+	local testMessage[1]=" a test message."
+    declare assertion_pairs
+    assertion_pairs+=( "$(tint -c "green(${testMessage[0]})blue(${testMessage[1]})")" )
+    assertion_pairs+=( "$(control_sequence "${testMessage[@]}")" )
+
+    _assert_that_assertion_pairs_are_equal "${assertion_pairs[@]}"
+}
+
+function test_printf_option_safe() {
+	local testMessage="-f"
+    declare assertion_pairs
+    assertion_pairs+=( "$(tint "green(${testMessage})")" )
+    assertion_pairs+=( "$(control_sequence "${GREEN}" "${testMessage}" "${RESET}" | cat -e)" )
+
+    _assert_that_assertion_pairs_are_equal "${assertion_pairs[@]}"
+}
