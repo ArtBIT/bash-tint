@@ -311,3 +311,9 @@ tintf() {
 }
 
 export -f tint tintf
+
+# If not sourced, execute the main function
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
+then
+    tint "$@"
+fi
