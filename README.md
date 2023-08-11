@@ -34,7 +34,7 @@ source path/to/bash-tint/src/tint
 
 ## Using [bash-clam](https://github.com/ArtBIT/bash-clam)
 ```
-clam install ArtBIT/bash-tint && clam source ArtBIT/bash-tint/src/tint
+clamx ArtBIT/bash-tint --source src/tint
 ```
 
 # Usage
